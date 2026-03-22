@@ -1,6 +1,5 @@
 const express = require('express');
-const axios   = require('axios');
-const app     = express();
+const app = express();
 
 app.use(express.json());
 app.use((req, res, next) => {
@@ -15,18 +14,18 @@ app.all('/proxy', async (req, res) => {
   const target = req.query.url;
   if (!target) return res.status(400).json({ error: 'Missing url' });
   try {
-    const response = await axios({
+    const response = await fetch(target, {
       method: req.method,
-      url: target,
-      data: req.method === 'POST' ? req.body : undefined,
       headers: { 'Content-Type': 'application/json' },
+      body: req.method === 'POST' ? JSON.stringify(req.body) : undefined,
     });
-    res.status(response.status).json(response.data);
+    const data = await response.json();
+    res.status(response.status).json(data);
   } catch(e) {
-    const s = e.response?.status || 500;
-    const d = e.response?.data  || { error: e.message };
-    res.status(s).json(d);
+    res.status(500).json({ error: e.message });
   }
 });
 
-app.listen(process.env.PORT || 3000);
+app.listen(process.env.PORT || 3000, '0.0.0.0', () => {
+  console.log('Running on ' + (process.env.PORT || 3000));
+});
